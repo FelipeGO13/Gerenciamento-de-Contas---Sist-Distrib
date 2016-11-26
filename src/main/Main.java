@@ -1,11 +1,18 @@
 package main;
 
+import java.util.List;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.Scanner;
+
+import org.apache.zookeeper.KeeperException;
 
 import cliente.Cliente;
 import conta.Conta;
 import controle.ControleCliente;
 import controle.ControleConta;
+import controle.ControleTransacao;
+import transacao.Transacao;
 
 public class Main {
 
@@ -25,7 +32,8 @@ public class Main {
 		switch (opcao) {
 		case 1:
 			ControleCliente controleCliente = new ControleCliente();
-			ControleConta controleConta = new ControleConta();
+			ControleConta controleConta = new ControleConta();			
+			ControleTransacao controleTransacao = new ControleTransacao();
 			
 			System.out.println("Insira o nome do cliente");
 			String nome = sc.next();
@@ -47,8 +55,29 @@ public class Main {
 			
 			controleConta.criarConta(c, agencia, conta, saldo, limite);
 			//Falta tentar setar um watcher pra identificar alteração nestes znodes
+			
+			
+			System.out.println("Digite a operação");
+			int oper = sc.nextInt();
+			
+			System.out.println("Digite o valor");
+			double val = sc.nextDouble();
+			
+			Transacao t = controleTransacao.criarTransacao(c, oper, val);
+			
+			
+			
 			break;
 		case 2:
+			
+
+			
+
+			//System.out.println("Digite o CPF do cliente");
+			//int numero_cpf = sc.nextInt();
+			
+			
+			
 			//Executa a transação utilizando queues e locks 
 			
 			/* 
