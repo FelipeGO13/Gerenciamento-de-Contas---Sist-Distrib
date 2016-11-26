@@ -8,9 +8,8 @@ import org.apache.zookeeper.ZooKeeper;
 import Conexao.ZooKeeperConnection;
 import cliente.Cliente;
 
-public class CriarConta {
-	
-	private ZooKeeper zk;
+public class ControleCliente {
+private ZooKeeper zk;
 	
 	private ZooKeeperConnection conexao;
 	
@@ -21,16 +20,23 @@ public class CriarConta {
 	      CreateMode.PERSISTENT);
 	}
 	
-	public void criarConta(Cliente c){
+	public Cliente criarCliente(String nome, String cpf){
+		Cliente c = new Cliente(nome, cpf);
+		znodeCliente(c);
+		return c;
+	}
+	
+	public void znodeCliente(Cliente c){
 		
-		String caminho = "/Clientes/"+c.getCpf()+"/conta";
-		String dados = c.getConta().getAgencia()+","+c.getConta().getNumero()+","+c.getConta()+","+c.getConta().getSaldoDebito()+","+c.getConta().getLimiteCredito();
+		String caminho = "/Clientes/"+c.getCpf();
+		String dados = c.getNome()+" "+c.getCpf();
 		
 		 try {
 	         conexao = new ZooKeeperConnection();
 	         zk = conexao.connect("localhost");
 	         create(caminho, dados.getBytes()); // Create the data to the specified path
 	         conexao.close();
+	         System.out.println("Cliente adicionado com sucesso");
 	      } catch (Exception e) {
 	         System.out.println(e.getMessage()); //Catch error message
 	      }

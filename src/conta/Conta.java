@@ -8,6 +8,16 @@ public class Conta {
 	private Double limiteCredito;
 	private String senha;
 	
+	public Conta() {
+		// TODO Auto-generated constructor stub
+	}
+	
+	public Conta(int agencia, int numConta, double saldo, double limite) {
+		this.agencia = agencia;
+		this.numero = numConta;
+		this.saldoDebito = saldo;
+		this.limiteCredito = limite;
+	}
 	public Integer getAgencia() {
 		return agencia;
 	}
