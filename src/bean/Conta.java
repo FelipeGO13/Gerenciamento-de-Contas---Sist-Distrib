@@ -1,4 +1,4 @@
-package conta;
+package bean;
 
 public class Conta {
 	
@@ -18,6 +18,7 @@ public class Conta {
 		this.saldoDebito = saldo;
 		this.limiteCredito = limite;
 	}
+	
 	public Integer getAgencia() {
 		return agencia;
 	}

@@ -1,6 +1,4 @@
-package cliente;
-
-import conta.Conta;
+package bean;
 
 public class Cliente {
 	

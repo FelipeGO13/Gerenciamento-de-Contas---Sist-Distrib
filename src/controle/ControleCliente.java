@@ -6,7 +6,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 
 import Conexao.ZooKeeperConnection;
-import cliente.Cliente;
+import bean.Cliente;
 
 public class ControleCliente {
 private ZooKeeper zk;

@@ -6,8 +6,9 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 
 import Conexao.ZooKeeperConnection;
-import cliente.Cliente;
-import conta.Conta;
+import bean.Cliente;
+import bean.Conta;
+
 
 public class ControleConta {
 	

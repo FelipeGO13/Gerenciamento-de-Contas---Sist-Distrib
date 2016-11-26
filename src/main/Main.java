@@ -1,18 +1,13 @@
 package main;
 
-import java.util.List;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.Scanner;
 
-import org.apache.zookeeper.KeeperException;
-
-import cliente.Cliente;
-import conta.Conta;
+import SyncPrimitive.BarrierQueueLock.Queue;
+import bean.Cliente;
+import bean.Transacao;
 import controle.ControleCliente;
 import controle.ControleConta;
 import controle.ControleTransacao;
-import transacao.Transacao;
 
 public class Main {
 
@@ -23,6 +18,9 @@ public class Main {
  */
 	public static void main(String[] args) {
 		//Para leader election, criar X znodes ao iniciar o prog
+		
+		String leaderAddress = "localhost";
+		
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Escolha a operação desejada: ");
 		System.out.println("Digite 1 para inserir cliente e conta ");
@@ -56,29 +54,26 @@ public class Main {
 			controleConta.criarConta(c, agencia, conta, saldo, limite);
 			//Falta tentar setar um watcher pra identificar alteração nestes znodes
 			
-			
-			System.out.println("Digite a operação");
-			int oper = sc.nextInt();
-			
-			System.out.println("Digite o valor");
-			double val = sc.nextDouble();
-			
-			Transacao t = controleTransacao.criarTransacao(c, oper, val);
-			
-			
-			
 			break;
 		case 2:
 			
-
-			
-
-			//System.out.println("Digite o CPF do cliente");
-			//int numero_cpf = sc.nextInt();
-			
-			
-			
 			//Executa a transação utilizando queues e locks 
+			
+			//Barrier barreira = new Barrier();
+			Queue fila = new Queue(leaderAddress, "/filaTransacao");
+			
+			Transacao t = new Transacao();
+			System.out.println("Insira o codigo");
+			t.setCodigo(sc.nextInt());
+			t.setCliente(new Cliente());
+			
+			System.out.println("Insira o cpf do cliente");
+			t.getCliente().setCpf(sc.next());
+			
+			System.out.println("Insira o valor");
+			t.setValor(sc.nextDouble());
+			
+			fila.queueTest(fila, "p", t, 0);
 			
 			/* 
 			 * Armazena tbm a transação através do barrier para aquele cliente (obs: cliente diferentes znodes de barrier diferentes)
@@ -92,19 +87,6 @@ public class Main {
 			break;
 
 		}
-		
-
-		
-
-		Conta conta = new Conta();
-		conta.setAgencia(1);
-		conta.setNumero(1);
-		conta.setSaldoDebito(0.00);
-		conta.setLimiteCredito(500.00);
-		conta.setSenha("12345");
-
-		ControleConta criarConta = new ControleConta();
-
 
 	}
 

@@ -1,6 +1,6 @@
 package controle;
 
-import java.util.List;
+import java.util.Date;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -8,17 +8,8 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 
 import Conexao.ZooKeeperConnection;
-import cliente.Cliente;
-
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs.Ids;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.data.Stat;
-
-import transacao.Transacao;
+import bean.Cliente;
+import bean.Transacao;
 
 public class ControleTransacao {
 private ZooKeeper zk;
@@ -32,8 +23,8 @@ private ZooKeeper zk;
 	      CreateMode.PERSISTENT);
 	}
 	
-	public Transacao criarTransacao(Cliente cliente, int operacao, Double valor){
-		Transacao t = new Transacao(cliente,operacao,valor);
+	public Transacao criarTransacao(Integer codigo, String descricao, Integer operacao, Double valor, Cliente cliente, Date data){
+		Transacao t = new Transacao(codigo, descricao, operacao, valor, cliente, data);
 		znodeTransacao(cliente,t);
 		return t;
 	}

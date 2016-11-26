@@ -1,6 +1,5 @@
 package SyncPrimitive;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -15,25 +14,29 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
+import Conexao.ZooKeeperConnection;
+import bean.Transacao;
+
 /*
  * Algoritmos do prof para barriers, queues e locks
  * 
  */
-public class SyncPrimitive implements Watcher {
+public class BarrierQueueLock implements Watcher {
 
     static ZooKeeper zk = null;
     static Integer mutex;
 
     String root;
 
-    SyncPrimitive(String address) {
+    BarrierQueueLock(String address) {
         if(zk == null){
             try {
                 System.out.println("Starting ZK:");
-                zk = new ZooKeeper(address, 3000, this);
+                ZooKeeperConnection conexao = new ZooKeeperConnection();
+   	         	zk = conexao.connect("localhost");
                 mutex = new Integer(-1);
                 System.out.println("Finished starting ZK: " + zk);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 System.out.println(e.toString());
                 zk = null;
             }
@@ -51,7 +54,7 @@ public class SyncPrimitive implements Watcher {
     /**
      * Barrier
      */
-    static public class Barrier extends SyncPrimitive {
+    static public class Barrier extends BarrierQueueLock {
         int size;
         String name;
 
@@ -142,7 +145,7 @@ public class SyncPrimitive implements Watcher {
     /**
      * Producer-Consumer queue
      */
-    static public class Queue extends SyncPrimitive {
+    static public class Queue extends BarrierQueueLock {
 
         /**
          * Constructor of producer-consumer queue
@@ -150,7 +153,7 @@ public class SyncPrimitive implements Watcher {
          * @param address
          * @param name
          */
-        Queue(String address, String name) {
+        public Queue(String address, String name) {
             super(address);
             this.root = name;
             // Create ZK node name
@@ -175,14 +178,11 @@ public class SyncPrimitive implements Watcher {
          * @return
          */
 
-        boolean produce(int i) throws KeeperException, InterruptedException{
+        boolean produce(Transacao t) throws KeeperException, InterruptedException{
             ByteBuffer b = ByteBuffer.allocate(4);
-            byte[] value;
-
-            // Add child with value i
-            b.putInt(i);
-            value = b.array();
-            zk.create(root + "/element", value, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
+            byte[] dadosTransacao =  t.toString().getBytes();
+            
+            zk.create(root + "/element", dadosTransacao, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
 
             return true;
         }
@@ -231,7 +231,7 @@ public class SyncPrimitive implements Watcher {
         }
     }
 
-    static public class Lock extends SyncPrimitive {
+    static public class Lock extends BarrierQueueLock {
     	long wait;
 	String pathName;
     	 /**
@@ -342,30 +342,17 @@ public class SyncPrimitive implements Watcher {
     		System.exit(0);
         }
     }
-    
-    public static void main(String args[]) {
-        if (args[0].equals("qTest"))
-            queueTest(args);
-        else if (args[0].equals("barrier"))
-            barrierTest(args);
-        else if (args[0].equals("lock"))
-        	lockTest(args);
-        else
-        	System.err.println("Unkonw option");
-    }
 
-    public static void queueTest(String args[]) {
-        Queue q = new Queue(args[1], "/app3");
 
-        System.out.println("Input: " + args[1]);
+    public static void queueTest(Queue q, String tipo, Transacao t, int max) {
+
+        System.out.println("Executando transações pendentes");
         int i;
-        Integer max = new Integer(args[2]);
 
-        if (args[3].equals("p")) {
+        if (tipo.equals("p")) {
             System.out.println("Producer");
-            for (i = 0; i < max; i++)
                 try{
-                    q.produce(10 + i);
+                    q.produce(t);
                 } catch (KeeperException e){
                     e.printStackTrace();
                 } catch (InterruptedException e){
