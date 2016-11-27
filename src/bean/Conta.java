@@ -50,6 +50,9 @@ public class Conta {
 		this.senha = senha;
 	}
 	
-	
+	@Override
+	public String toString() {
+		return agencia+","+numero+","+saldoDebito+","+limiteCredito;
+	}
 
 }

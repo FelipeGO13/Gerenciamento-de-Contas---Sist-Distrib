@@ -1,5 +1,7 @@
 package controle;
 
+import java.io.FileOutputStream;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -35,6 +37,12 @@ public class ControleConta {
 	         zk = conexao.connect("localhost");
 	         create(caminho, dados.getBytes()); // Create the data to the specified path
 	         conexao.close();
+	         
+	         FileOutputStream fos = new FileOutputStream(c.getCpf() + ".txt");
+	         String inicio = "Histórico de transações\r\n Cliente: " + c.getNome() + "\r\n CPF: " + c.getCpf() +  "\r\n Agência: " + conta.getAgencia() +  "\r\n Conta: " + conta.getNumero();
+             fos.write(inicio.getBytes());
+             fos.close();
+	         
 	         System.out.println("Conta criada com sucesso!");
 	      } catch (Exception e) {
 	         System.out.println(e.getMessage()); //Catch error message

@@ -37,7 +37,11 @@ public class Cliente {
 	}
 	
 	
-	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return cpf;
+	}
 	
 
 }

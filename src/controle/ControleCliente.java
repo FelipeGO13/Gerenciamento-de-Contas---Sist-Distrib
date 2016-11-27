@@ -1,5 +1,7 @@
 package controle;
 
+import java.io.FileOutputStream;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -37,6 +39,7 @@ private ZooKeeper zk;
 	         create(caminho, dados.getBytes()); // Create the data to the specified path
 	         conexao.close();
 	         System.out.println("Cliente adicionado com sucesso");
+	        
 	      } catch (Exception e) {
 	         System.out.println(e.getMessage()); //Catch error message
 	      }

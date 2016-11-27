@@ -1,6 +1,5 @@
 package SyncPrimitive;
 
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -16,7 +15,9 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import Conexao.ZooKeeperConnection;
+import bean.Cliente;
 import bean.Transacao;
+import controle.ControleTransacao;
 
 /*
  * Algoritmos do prof para barriers, queues e locks
@@ -180,7 +181,7 @@ public class BarrierQueueLock implements Watcher {
 
 		boolean produce(Transacao t) throws KeeperException, InterruptedException {
 			Stat stat = null;
-			
+
 			byte[] b = zk.getData("/filaTransacao", false, stat);
 			ByteBuffer buffer = ByteBuffer.wrap(b);
 			System.out.println(b.toString());
@@ -203,7 +204,8 @@ public class BarrierQueueLock implements Watcher {
 		 */
 		void consume() throws KeeperException, InterruptedException {
 			Stat stat = null;
-
+			ControleTransacao controleTransacao = null;
+			Transacao t = null;
 			// Get the first element available
 			while (true) {
 				synchronized (mutex) {
@@ -223,15 +225,32 @@ public class BarrierQueueLock implements Watcher {
 							}
 						}
 						try {
+							controleTransacao = new ControleTransacao();
+
 							System.out.println("Temporary value: " + root + "/" + minString);
+
 							byte[] b = zk.getData(root + "/" + minString, false, stat);
+
 							String dados = new String(b, "UTF-8");
 							String[] dadosTransacao = dados.split(",");
-							System.out.println("Dados da transação: " + dados);
+							System.out.println("Processando dados da transação... ");
+
 							int codigo = Integer.parseInt(dadosTransacao[0]);
+							String cpfCliente = dadosTransacao[1];
+							Cliente c = new Cliente();
+							c.setCpf(cpfCliente);
+							int operacao = Integer.parseInt(dadosTransacao[2]);
+							double valor = Double.parseDouble(dadosTransacao[3]);
+							String data = dadosTransacao[4];
+
+							String descricao = dadosTransacao[5];
+
+							t = new Transacao(codigo, descricao, operacao, valor, c, data);
+							controleTransacao.processarTransacao(t);
+
+							System.out.println("Transação: " + codigo + " processada com sucesso!");
 							zk.delete(root + "/" + minString, 0);
-							System.out.println("Transação: " + codigo + " lida com sucesso!");
-						} catch (UnsupportedEncodingException e) {
+						} catch (Exception e) {
 							e.printStackTrace();
 						}
 
@@ -252,7 +271,7 @@ public class BarrierQueueLock implements Watcher {
 		 * @param name
 		 *            Name of the lock node
 		 */
-		Lock(String address, String name, long waitTime) {
+		public Lock(String address, String name, long waitTime) {
 			super(address);
 			this.root = name;
 			this.wait = waitTime;
@@ -271,7 +290,7 @@ public class BarrierQueueLock implements Watcher {
 			}
 		}
 
-		boolean lock() throws KeeperException, InterruptedException {
+		boolean lock(Transacao t) throws KeeperException, InterruptedException {
 			// Step 1
 			pathName = zk.create(root + "/lock-", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
 			System.out.println("My path name is: " + pathName);
@@ -281,7 +300,7 @@ public class BarrierQueueLock implements Watcher {
 
 		boolean testMin() throws KeeperException, InterruptedException {
 			while (true) {
-				Integer suffix = new Integer(pathName.substring(12));
+				Integer suffix = new Integer(pathName.substring(17));
 				// Step 2
 				List<String> list = zk.getChildren(root, false);
 				Integer min = new Integer(list.get(0).substring(5));
@@ -326,7 +345,7 @@ public class BarrierQueueLock implements Watcher {
 			return false;
 		}
 
-		synchronized public void process(WatchedEvent event) {
+		synchronized public void process(WatchedEvent event, Transacao t) {
 			synchronized (mutex) {
 				String path = event.getPath();
 				if (event.getType() == Event.EventType.NodeDeleted) {
@@ -334,7 +353,7 @@ public class BarrierQueueLock implements Watcher {
 					try {
 						if (testMin()) { // Step 5 (cont.) -> go to step 2 to
 											// check
-							this.compute();
+							this.compute(t);
 						} else {
 							System.out.println("Not lowest sequence number! Waiting for a new notification.");
 						}
@@ -345,11 +364,12 @@ public class BarrierQueueLock implements Watcher {
 			}
 		}
 
-		void compute() {
+		void compute(Transacao t) {
 			System.out.println("Lock acquired!");
 			try {
-				new Thread().sleep(wait);
-			} catch (InterruptedException e) {
+				ControleTransacao controleTransacao = new ControleTransacao();
+				controleTransacao.processarTransacao(t);
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			// Exits, which releases the ephemeral node (Unlock operation)
@@ -422,15 +442,15 @@ public class BarrierQueueLock implements Watcher {
 		System.out.println("Left barrier");
 	}
 
-	public static void lockTest(String args[]) {
-		Lock lock = new Lock(args[1], "/lock", new Long(args[2]));
+	public static void lockTest(Lock lock, Transacao t) {
+		
 		try {
-			boolean success = lock.lock();
+			boolean success = lock.lock(t);
 			if (success) {
-				lock.compute();
+				lock.compute(t);
 			} else {
 				while (true) {
-					// Waiting for a notification
+					
 				}
 			}
 		} catch (KeeperException e) {

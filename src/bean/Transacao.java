@@ -1,7 +1,5 @@
 package bean;
 
-import java.util.Date;
-
 public class Transacao {
 
 	private Integer codigo;
@@ -9,19 +7,19 @@ public class Transacao {
 	private Integer operacao; 
 	private Double valor;
 	private Cliente cliente;
-	private Date data;
+	private String data;
 	
 	public Transacao() {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public Transacao(Integer codigo, String descricao, Integer operacao, Double valor, Cliente cliente, Date data) {
+	public Transacao(Integer codigo, String descricao, Integer operacao, Double valor, Cliente cliente, String data) {
 		this.codigo = codigo;
 		this.descricao = descricao;
 		this.operacao = operacao;
 		this.valor = valor;
 		this.cliente = cliente;
-		this.data = data;
+		this.setData(data);
 	}
 
 	public Integer getCodigo() {
@@ -64,9 +62,17 @@ public class Transacao {
 		this.cliente = cliente;
 	}
 	
+	public String getData() {
+		return data;
+	}
+
+	public void setData(String data) {
+		this.data = data;
+	}
+
 	@Override
 	public String toString() {
-		return codigo+","+cliente.getCpf()+","+operacao+","+valor;
+		return codigo+","+cliente.getCpf()+","+operacao+","+valor+","+data+","+descricao;
 	}
 	
 }
