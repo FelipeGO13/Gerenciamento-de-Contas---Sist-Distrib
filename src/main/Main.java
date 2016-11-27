@@ -25,6 +25,9 @@ public class Main {
 		System.out.println("Escolha a operação desejada: ");
 		System.out.println("Digite 1 para inserir cliente e conta ");
 		System.out.println("Digite 2 para inserir processar transação ");
+		System.out.println("Digite 3 para HUE ");
+		System.out.println("Digite 4 para processar transações pendentes ");
+		
 		int opcao = sc.nextInt();
 
 		switch (opcao) {
@@ -60,7 +63,7 @@ public class Main {
 			//Executa a transação utilizando queues e locks 
 			
 			//Barrier barreira = new Barrier();
-			Queue fila = new Queue(leaderAddress, "/filaTransacao");
+			Queue filaEscrita = new Queue(leaderAddress, "/filaTransacao");
 			
 			Transacao t = new Transacao();
 			System.out.println("Insira o codigo");
@@ -73,7 +76,7 @@ public class Main {
 			System.out.println("Insira o valor");
 			t.setValor(sc.nextDouble());
 			
-			fila.queueTest(fila, "p", t, 0);
+			filaEscrita.queueTest(filaEscrita, "p", t, 0);
 			
 			/* 
 			 * Armazena tbm a transação através do barrier para aquele cliente (obs: cliente diferentes znodes de barrier diferentes)
@@ -84,6 +87,14 @@ public class Main {
 			/*
 			 * Pegar informações de um usuário - dados armazenados no znode cpf e conta
 			 */
+			break;
+		case 4:
+			/*
+			 * Executar transações pendentes
+			 */
+			Queue filaLeitura = new Queue(leaderAddress, "/filaTransacao");
+			filaLeitura.queueTest(filaLeitura, "c", new Transacao(), 2);
+			
 			break;
 
 		}
