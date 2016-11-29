@@ -22,15 +22,15 @@ private ZooKeeper zk;
 	      CreateMode.PERSISTENT);
 	}
 	
-	public Cliente criarCliente(String nome, String cpf){
+	public Cliente criarCliente(String nome, String cpf, String leaderPath){
 		Cliente c = new Cliente(nome, cpf);
-		znodeCliente(c);
+		znodeCliente(c, leaderPath);
 		return c;
 	}
 	
-	public void znodeCliente(Cliente c){
+	public void znodeCliente(Cliente c, String leaderPath){
 		
-		String caminho = "/Clientes/"+c.getCpf();
+		String caminho =  leaderPath + "/Clientes/"+c.getCpf();
 		String dados = c.getNome()+" "+c.getCpf();
 		
 		 try {

@@ -67,7 +67,7 @@ public class BarrierQueueLock implements Watcher {
 		 * @param root
 		 * @param size
 		 */
-		Barrier(String address, String root, int size) {
+		public Barrier(String address, String root, int size) {
 			super(address);
 			this.root = root;
 			this.size = size;
@@ -103,8 +103,9 @@ public class BarrierQueueLock implements Watcher {
 		 * @throws InterruptedException
 		 */
 
-		boolean enter() throws KeeperException, InterruptedException {
-			zk.create(root + "/" + name, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+		boolean enter(Transacao t) throws KeeperException, InterruptedException {
+			byte[] dadosTransacao = t.toString().getBytes();
+			zk.create(root + "/" + name, dadosTransacao, Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
 			while (true) {
 				synchronized (mutex) {
 					List<String> list = zk.getChildren(root, true);
@@ -326,7 +327,6 @@ public class BarrierQueueLock implements Watcher {
 				String maxString = minString;
 				for (String s : list) {
 					Integer tempValue = new Integer(s.substring(5));
-					// System.out.println("Temp value: " + tempValue);
 					if (tempValue > max && tempValue < suffix) {
 						max = tempValue;
 						maxString = s;
@@ -408,11 +408,11 @@ public class BarrierQueueLock implements Watcher {
 		}
 	}
 
-	public static void barrierTest(String args[]) {
-		Barrier b = new Barrier(args[1], "/b1", new Integer(args[2]));
+	public static void barrierTest(BarrierQueueLock p, Barrier b, Transacao t) {
+		
 		try {
-			boolean flag = b.enter();
-			System.out.println("Entered barrier: " + args[2]);
+			boolean flag = b.enter(t);
+			System.out.println("Entered barrier: " + t.getCodigo());
 			if (!flag)
 				System.out.println("Error when entering the barrier");
 		} catch (KeeperException e) {
@@ -421,17 +421,10 @@ public class BarrierQueueLock implements Watcher {
 
 		}
 
-		// Generate random integer
-		Random rand = new Random();
-		int r = rand.nextInt(100);
-		// Loop for rand iterations
-		for (int i = 0; i < r; i++) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-
-			}
-		}
+		if(p.getClass().equals(Lock.class))
+			p.lockTest((Lock) p, t);
+		else 
+			p.queueTest((Queue) p, "p", t, 0);
 		try {
 			b.leave();
 		} catch (KeeperException e) {

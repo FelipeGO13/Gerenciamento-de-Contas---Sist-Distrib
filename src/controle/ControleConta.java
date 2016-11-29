@@ -25,11 +25,11 @@ public class ControleConta {
 	      CreateMode.PERSISTENT);
 	}
 	
-	public void criarConta(Cliente c, int agencia, int numConta, double saldo, double limite){
+	public void criarConta(Cliente c, int agencia, int numConta, double saldo, double limite, String leaderPath){
 		Conta conta = new Conta(agencia, numConta, saldo, limite);
 		c.setConta(conta);
 		
-		String caminho = "/Clientes/"+c.getCpf()+"/conta";
+		String caminho =  leaderPath + "/Clientes/"+c.getCpf()+"/conta";
 		String dados = c.getConta().getAgencia()+","+c.getConta().getNumero()+","+c.getConta().getSaldoDebito()+","+c.getConta().getLimiteCredito();
 		
 		 try {
