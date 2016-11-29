@@ -48,7 +48,6 @@ public class LeaderElection implements Watcher {
 		String leader;
 		String id; // Id of the leader
 		String pathName;
-		String leaderPath;
 
 		/**
 		 * Constructor of Leader
@@ -68,20 +67,29 @@ public class LeaderElection implements Watcher {
 			// Create ZK node name
 			if (zk != null) {
 				try {
-					// Create election znode
-					Stat s1 = zk.exists(root, false);
+					// Checking for a leader
+
+					Stat s1 = zk.exists("/Server" + id, false);
+					System.out.println("Creating... " + id);
 					if (s1 == null) {
-						zk.create(root, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+						leaderPath = zk.create("/Server" + id, new Integer(id)
+								.toString().getBytes(), Ids.OPEN_ACL_UNSAFE,
+								CreateMode.PERSISTENT);
+						zk.create("/Server" + id + "/Clientes", new byte[0],
+								Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 					}
 					// Checking for a leader
 					Stat s2 = zk.exists(leader, false);
 					if (s2 != null) {
 						byte[] idLeader = zk.getData(leader, false, s2);
-						System.out.println("Current leader with id: " + new String(idLeader));
+						System.out.println("Current leader with id: "
+								+ new String(idLeader));
 					}
 
 				} catch (KeeperException e) {
-					System.out.println("Keeper exception when instantiating queue: " + e.toString());
+					System.out
+							.println("Keeper exception when instantiating queue: "
+									+ e.toString());
 				} catch (InterruptedException e) {
 					System.out.println("Interrupted exception");
 				}
@@ -89,9 +97,15 @@ public class LeaderElection implements Watcher {
 		}
 
 		boolean elect() throws KeeperException, InterruptedException {
-			this.pathName = zk.create(root + "/n-", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-			System.out.println("My path name is: " + pathName + " and my id is: " + id + "!");
-			leaderPath  = "/Server"+id;
+
+			byte[] idLeader = zk.getData(leader, false, null);
+
+			this.pathName = zk.create(root + "/n-", new byte[0],
+					Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+			System.out.println("My path name is: " + pathName
+					+ " and my id is: " + id + "!");
+			leaderPath = "/Server" + id;
+
 			return check();
 		}
 
@@ -157,11 +171,11 @@ public class LeaderElection implements Watcher {
 		void leader() throws KeeperException, InterruptedException {
 			System.out.println("Become a leader: " + id + "!");
 			// Create leader znode
-			Stat s2 = zk.exists(leader, false);
-			if (s2 == null) {
-				leaderPath = zk.create(leader, id.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-			} else {
-				zk.setData(leader, new String("leader-" + id).getBytes(), -1);
+			zk.setData(leader, new String("leader-" + id).getBytes(), -1);
+			for (int i = 0; i < 3; i++) {
+				if (i != Integer.parseInt(id))
+					zk.setData("/Server" + i, Integer.toString(i).getBytes(),
+							-1);
 			}
 		}
 
@@ -179,46 +193,46 @@ public class LeaderElection implements Watcher {
 
 	public static void leaderElection(String address) {
 		// Generate random integer
-		try {
-			Leader leader = null;
 
-			for (int i = 0; i < 3; i++) {
-				Stat s2 = zk.exists("/Server" + i, false);
-				
-				leader = new Leader(address, "/election", "/Server" + i, i);
-				if (s2 == null) {
-					serverNumber = i;
-					
-					leaderPath =  zk.create("/Server" + serverNumber, new Integer(i).toString().getBytes(), Ids.OPEN_ACL_UNSAFE,
-							CreateMode.PERSISTENT);
-					zk.create("/Server" + serverNumber + "/Clientes", new byte[0], Ids.OPEN_ACL_UNSAFE,
-							CreateMode.PERSISTENT);
-				}else{
-					byte[] idLeader = zk.getData("/Server" + i, false, null);
-					
-					if (new String(idLeader).contains("leader")) {
-						leader = new Leader(address, "/election", "/Server" + i,
-								Integer.parseInt(new String(idLeader).substring(7)));
-						leaderPath = "/Server" + i;
-						break;
-					} else {
-						leader.elect();
+		Random rand = new Random();
+		int r = rand.nextInt(3);
+		Leader leader = null;
+		for (int i = 0; i < 3; i++) {
+			byte[] dados;
+			try {
+				dados = zk.getData("/Server" + i, null, null);
+				String dadosZnode = new String(dados);
+				if (dadosZnode.contains("leader")) {
+					leader = new Leader(address, "/election", "/Server" + i, i);
+					leaderPath = "/Server" + i;
+				} else
+					zk.setData("/Server" + i, Integer.toString(i).getBytes(),
+							-1);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		if (leader == null) {
+			leader = new Leader(address, "/election", "/Server" + r, r);
+
+			try {
+				boolean success = leader.elect();
+				if (success) {
+					leader.compute();
+				} else {
+					while (true) {
+						// Waiting for a notification
 					}
 				}
-			} 
-			boolean success = leader.elect();
-			if (success) {
-				leader.compute();
-			} else {
-				while (true) {
-					// Waiting for a notification
-				}
+			} catch (KeeperException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-		} catch (KeeperException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} else {
+			System.out.println("Servidor já ativo " + leaderPath);
+			leader.compute();
 		}
 	}
-
 }
