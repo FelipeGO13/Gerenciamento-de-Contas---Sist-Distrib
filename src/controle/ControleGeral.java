@@ -14,11 +14,11 @@ public class ControleGeral {
 	
 	public void executa(String leaderAddress, String leaderPath){
 		Scanner sc = new Scanner(System.in);
-		System.out.println("Escolha a operação desejada: ");
+		System.out.println("Escolha a operaÃ§Ã£o desejada: ");
 		System.out.println("Digite 1 para inserir cliente e conta ");
-		System.out.println("Digite 2 para inserir processar transação ");
+		System.out.println("Digite 2 para inserir processar transaÃ§Ã£o ");
 		System.out.println("Digite 3 para HUE ");
-		System.out.println("Digite 4 para processar transações pendentes ");
+		System.out.println("Digite 4 para processar transaÃ§Ãµes pendentes ");
 
 		int opcao = sc.nextInt();
 
@@ -34,6 +34,7 @@ public class ControleGeral {
 			System.out.println("Insira o cpf do cliente");
 			String cpf = sc.next();
 
+			System.out.println(leaderPath);
 			Cliente c = controleCliente.criarCliente(nome, cpf, leaderPath);
 
 			System.out.println("Insira a agencia ");
@@ -47,24 +48,26 @@ public class ControleGeral {
 			double limite = sc.nextDouble();
 
 			controleConta.criarConta(c, agencia, conta, saldo, limite, leaderPath);
-			// Falta tentar setar um watcher pra identificar alteração nestes
+			// Falta tentar setar um watcher pra identificar alteraÃ§Ã£o nestes
 			// znodes
 
 			break;
 		case 2:
 
-			// Executa a transação utilizando queues e locks
+			// Executa a transaÃ§Ã£o utilizando queues e locks
 			try {
 
-				Queue filaEscrita = new Queue(leaderAddress, "/filaTransacao");
-				Lock lock = new Lock(leaderAddress, "/Transacoes", 10000);
+				Queue filaEscrita = new Queue(leaderAddress, "/filaTransacao", leaderPath);
+				Lock lock = new Lock(leaderAddress, "/Transacoes", 10000, leaderPath);
 				Barrier barreira = null;
-				int size = 0;
-				System.out.println("Deseja fazer múltiplas transações");
+				int size = 1;
+				System.out.println("Deseja fazer mÃºltiplas transaÃ§Ãµes");
 				if (sc.next().toUpperCase().equals("S")) {
-					System.out.println("Digite o número de transações a serem processadas");
+					System.out.println("Digite o nÃºmero de transaÃ§Ãµes a serem processadas");
 					size = sc.nextInt();
-					barreira = new Barrier(leaderAddress, "/MultiTransacoes", size);
+					barreira = new Barrier(leaderAddress, "/MultiTransacoes", size, leaderPath);
+				} else {
+					System.out.println("Processando transaÃ§Ã£o Ãºnica");
 				}
 
 				for (int i = 0; i < size; i++) {
@@ -72,20 +75,20 @@ public class ControleGeral {
 					Transacao t = new Transacao();
 					t.setCliente(new Cliente());
 
-					System.out.println("Insira o código da transação");
+					System.out.println("Insira o cÃ³digo da transaÃ§Ã£o");
 					t.setCodigo(sc.nextInt());
 
 					System.out.println("Insira o cpf do cliente");
 					t.getCliente().setCpf(sc.next());
 
-					System.out.println("Insira o tipo da Operação, digite:\r\n 1 para Saque\r\n"
-							+ "2 para Depósitos\r\n" + "3 para Compra-Débito\r\n" + "4 para Compra-Crédito");
+					System.out.println("Insira o tipo da OperaÃ§Ã£o, digite:\r\n 1 para Saque\r\n"
+							+ "2 para DepÃ³sitos\r\n" + "3 para Compra-DÃ©bito\r\n" + "4 para Compra-CrÃ©dito");
 					t.setOperacao(sc.nextInt());
 
 					System.out.println("Insira o valor");
 					t.setValor(sc.nextDouble());
 
-					System.out.println("Insira um descrição para a transação");
+					System.out.println("Insira um descriÃ§Ã£o para a transaÃ§Ã£o");
 					if (sc.hasNext())
 						t.setDescricao(sc.next());
 
@@ -97,8 +100,8 @@ public class ControleGeral {
 
 					System.out.println(t);
 
-					if (size > 0) {
-						System.out.println("Processando transação " + (i+1));
+					if (size > 1) {
+						System.out.println("Processando transaÃ§Ã£o " + (i+1));
 						if (dataAtual.getHours() < 19 && dataAtual.getHours() > 8) {
 							barreira.barrierTest(lock, barreira, t);
 						} else {
@@ -120,23 +123,23 @@ public class ControleGeral {
 			}
 
 			/*
-			 * Armazena tbm a transação através do barrier para aquele cliente
-			 * (obs: cliente diferentes znodes de barrier diferentes) após 3
-			 * transações o barrier é liberado para checagem de autenticidade e
-			 * calcular média de gastos e outras métricas para detectar fraudes
+			 * Armazena tbm a transaÃ§Ã£o atravÃ©s do barrier para aquele cliente
+			 * (obs: cliente diferentes znodes de barrier diferentes) apÃ³s 3
+			 * transaÃ§Ãµes o barrier Ã© liberado para checagem de autenticidade e
+			 * calcular mÃ©dia de gastos e outras mÃ©tricas para detectar fraudes
 			 */
 			break;
 		case 3:
 			/*
-			 * Pegar informações de um usuário - dados armazenados no znode cpf
+			 * Pegar informaÃ§Ãµes de um usuÃ¡rio - dados armazenados no znode cpf
 			 * e conta
 			 */
 			break;
 		case 4:
 			/*
-			 * Executar transações pendentes
+			 * Executar transaÃ§Ãµes pendentes
 			 */
-			Queue filaLeitura = new Queue(leaderAddress, "/filaTransacao");
+			Queue filaLeitura = new Queue(leaderAddress, "/filaTransacao", leaderPath);
 			filaLeitura.queueTest(filaLeitura, "c", new Transacao(), 2);
 
 			break;
