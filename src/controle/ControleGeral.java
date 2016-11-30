@@ -11,11 +11,12 @@ import bean.Transacao;
 
 public class ControleGeral {
 
+	@SuppressWarnings({ "deprecation", "static-access" })
 	public void executa(String leaderAddress, String leaderPath) {
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Escolha a operação desejada: ");
 		System.out.println("Digite 1 para inserir cliente e conta");
-		System.out.println("Digite 2 para processar transação ");
+		System.out.println("Digite 2 para processar transação");
 		System.out.println("Digite 3 para processar transações pendentes");
 
 		int opcao = sc.nextInt();
@@ -44,21 +45,20 @@ public class ControleGeral {
 			System.out.println("Insira o limite");
 			double limite = sc.nextDouble();
 
-			controleConta.criarConta(c, agencia, conta, saldo, limite,
-					leaderPath);
-			// Falta tentar setar um watcher pra identificar alteraÃ§Ã£o nestes
-			// znodes
+			controleConta.criarConta(c, agencia, conta, saldo, limite,leaderPath);
 
 			break;
 		case 2:
-
-			// Executa a transaÃ§Ã£o utilizando queues e locks
+			/**
+			 * Processa transações requisitadas pelo usuário.
+			 * Caso esta transação seja requisitada após o horário permitido,
+			 * a mesma é armazenada em uma fila para ser executada no dia seguinte, 
+			 * mediante processamento do usuário
+			 */
 			try {
 
-				Queue filaEscrita = new Queue(leaderAddress, "/filaTransacao",
-						leaderPath);
-				Lock lock = new Lock(leaderAddress, "/Transacoes", 10000,
-						leaderPath);
+				Queue filaEscrita = new Queue(leaderAddress, "/filaTransacao",leaderPath);
+				Lock lock = new Lock(leaderAddress, "/Transacoes", 10000,leaderPath);
 
 				Transacao t = new Transacao();
 				t.setCliente(new Cliente());
@@ -83,41 +83,28 @@ public class ControleGeral {
 				if (sc.hasNext())
 					t.setDescricao(sc.next());
 
-				SimpleDateFormat formatter = new SimpleDateFormat(
-						"dd/MM/yyyy hh:mm:ss");
+				SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss");
 				Date dataAtual = new Date();
 
 				String data = formatter.format(dataAtual);
 				t.setData(data);
 
-				System.out.println(t);
-
 				if (dataAtual.getHours() < 19 && dataAtual.getHours() > 8)
 					lock.lockTest(lock, t);
 				else
 					filaEscrita.queueTest(filaEscrita, "p", t, 0);
-
 			}
 
 			catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
-			/*
-			 * Armazena tbm a transaÃ§Ã£o atravÃ©s do barrier para aquele
-			 * cliente (obs: cliente diferentes znodes de barrier diferentes)
-			 * apÃ³s 3 transaÃ§Ãµes o barrier Ã© liberado para checagem de
-			 * autenticidade e calcular mÃ©dia de gastos e outras mÃ©tricas para
-			 * detectar fraudes
-			 */
 			break;
 		case 3:
-			/*
-			 * Executar transaÃ§Ãµes pendentes
+			/**
+			 * Executa transações pendentes, caso existam.
 			 */
-			Queue filaLeitura = new Queue(leaderAddress, "/filaTransacao",
-					leaderPath);
+			Queue filaLeitura = new Queue(leaderAddress, "/filaTransacao", leaderPath);
 			filaLeitura.queueTest(filaLeitura, "c", new Transacao(), 2);
 
 			break;

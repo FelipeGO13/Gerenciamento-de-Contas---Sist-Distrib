@@ -222,7 +222,7 @@ public class BarrierQueueLock implements Watcher {
 				synchronized (mutex) {
 					List<String> list = zk.getChildren(root, true);
 					if (list.size() == 0) {
-						System.out.println("Going to wait");
+						System.out.println("Transações processadas com sucesso!");
 						mutex.wait();
 					} else {
 						Integer min = new Integer(list.get(0).substring(7));
@@ -307,7 +307,7 @@ public class BarrierQueueLock implements Watcher {
 		boolean lock(Transacao t) throws KeeperException, InterruptedException {
 			// Step 1
 			pathName = zk.create(root + "/lock-", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-			System.out.println("My path name is: " + pathName);
+			System.out.println("O número de transação temporário é: " + pathName);
 			this.transacao = t;
 			// Steps 2 to 5
 			return testMin();
@@ -319,7 +319,6 @@ public class BarrierQueueLock implements Watcher {
 				// Step 2
 				List<String> list = zk.getChildren(root, false);
 				Integer min = new Integer(list.get(0).substring(5));
-				System.out.println("List: " + list.toString());
 				String minString = list.get(0);
 				for (String s : list) {
 					Integer tempValue = new Integer(s.substring(5));
@@ -328,10 +327,9 @@ public class BarrierQueueLock implements Watcher {
 						minString = s;
 					}
 				}
-				System.out.println("Suffix: " + suffix + ", min: " + min);
 				// Step 3
 				if (suffix.equals(min)) {
-					System.out.println("Lock acquired for " + minString + "!");
+					System.out.println("Transação sendo processada neste momento " + minString + "!");
 					return true;
 				}
 				// Step 4
@@ -354,7 +352,9 @@ public class BarrierQueueLock implements Watcher {
 					break;
 				}
 			}
-			System.out.println(pathName + " is waiting for a notification!");
+			System.out.println("Aguarde um momento, outras transações estão sendo realizadas no momento!");
+			System.out.println("O número desta transação é: " + pathName);
+			
 			return false;
 		}
 
@@ -362,7 +362,6 @@ public class BarrierQueueLock implements Watcher {
 			synchronized (mutex) {
 				String path = event.getPath();
 				if (event.getType() == Event.EventType.NodeDeleted) {
-					System.out.println("Notification from " + path);
 					try {
 						if (testMin()) { // Step 5 (cont.) -> go to step 2 to
 											// check
@@ -378,7 +377,6 @@ public class BarrierQueueLock implements Watcher {
 		}
 
 		void compute(Transacao t) {
-			System.out.println("Lock acquired!");
 			try {
 				ControleTransacao controleTransacao = new ControleTransacao();
 				controleTransacao.processarTransacao(t, leaderPath);
@@ -386,7 +384,7 @@ public class BarrierQueueLock implements Watcher {
 				e.printStackTrace();
 			}
 			// Exits, which releases the ephemeral node (Unlock operation)
-			System.out.println("Lock released!");
+			System.out.println("Transação processada com sucesso!");
 			System.exit(0);
 		}
 	}

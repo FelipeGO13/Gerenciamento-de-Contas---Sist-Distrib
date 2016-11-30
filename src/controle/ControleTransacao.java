@@ -3,7 +3,6 @@ package controle;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -22,7 +21,6 @@ public class ControleTransacao {
 
 	private ZooKeeperConnection conexao;
 
-	// Method to create znode in zookeeper ensemble
 	private void create(String path, byte[] data) throws KeeperException,
 			InterruptedException {
 		zk.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
@@ -46,15 +44,15 @@ public class ControleTransacao {
 			conexao = new ZooKeeperConnection();
 			zk = conexao.connect("localhost");
 
-			create(caminho, dados.getBytes()); // Create the data to the
-												// specified path
+			create(caminho, dados.getBytes()); 
 			conexao.close();
 			System.out.println("Transação adicionada com sucesso");
 		} catch (Exception e) {
-			System.out.println(e.getMessage()); // Catch error message
+			System.out.println(e.getMessage()); 
 		}
 	}
 
+	@SuppressWarnings("static-access")
 	public void processarTransacao(Transacao t, String leaderPath) {
 		try {
 			Stat stat = null;
@@ -102,8 +100,6 @@ public class ControleTransacao {
 					+ " Data: " + t.getData() + "\r\n Tipo: " + t.getOperacao()
 					+ "-" + tipoOperacao + "\r\n Valor: " + t.getValor()
 					+ "\r\n Descrição: " + t.getDescricao();
-
-			System.out.println(infoTransacao);
 
 			File file = new File(t.getCliente().getCpf() + ".txt");
 

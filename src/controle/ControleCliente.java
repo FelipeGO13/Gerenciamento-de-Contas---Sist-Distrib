@@ -26,12 +26,11 @@ public class ControleCliente {
 		try {
 			conexao = new ZooKeeperConnection();
 			zk = conexao.connect("localhost");
-			zk.create(caminho, dados.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
-					CreateMode.PERSISTENT);
+			zk.create(caminho, dados.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 			System.out.println("Cliente adicionado com sucesso");
 
 		} catch (Exception e) {
-			System.out.println(e.getMessage()); // Catch error message
+			System.out.println(e.getMessage()); 
 		}
 	}
 
@@ -45,8 +44,7 @@ public class ControleCliente {
 					String editPath = serverAtivo.substring(0, 7) + i
 							+ "/Clientes/" + c.getCpf();
 
-					zk.create(editPath, dados.getBytes(),
-							ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+					zk.create(editPath, dados.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 				}
 			}
 		} catch (Exception e) {
