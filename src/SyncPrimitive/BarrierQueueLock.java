@@ -67,7 +67,7 @@ public class BarrierQueueLock implements Watcher {
 		 * @param root
 		 * @param size
 		 */
-		public Barrier(String address, String root, int size) {
+		public Barrier(String address, String root, int size, String leaderPath) {
 			super(address);
 			this.root = root;
 			this.size = size;
@@ -153,7 +153,7 @@ public class BarrierQueueLock implements Watcher {
 		 * @param address
 		 * @param name
 		 */
-		public Queue(String address, String name) {
+		public Queue(String address, String name, String leaderPath) {
 			super(address);
 			this.root = name;
 			// Create ZK node name
@@ -272,7 +272,7 @@ public class BarrierQueueLock implements Watcher {
 		 * @param name
 		 *            Name of the lock node
 		 */
-		public Lock(String address, String name, long waitTime) {
+		public Lock(String address, String name, long waitTime, String leaderPath) {
 			super(address);
 			this.root = name;
 			this.wait = waitTime;
