@@ -25,7 +25,7 @@ public class LeaderElection implements Watcher {
 	public LeaderElection(String address) {
 		if (zk == null) {
 			try {
-				System.out.println("Starting ZK:");
+				
 				zk = new ZooKeeper(address, 3000, this);
 				mutex = new Integer(-1);
 				System.out.println("Finished starting ZK: " + zk);
@@ -70,7 +70,7 @@ public class LeaderElection implements Watcher {
 					// Checking for a leader
 
 					Stat s1 = zk.exists("/Server" + id, false);
-					System.out.println("Creating... " + id);
+					
 					if (s1 == null) {
 						leaderPath = zk.create("/Server" + id, new Integer(id)
 								.toString().getBytes(), Ids.OPEN_ACL_UNSAFE,
@@ -197,7 +197,7 @@ public class LeaderElection implements Watcher {
 		Random rand = new Random();
 		int r = rand.nextInt(3);
 		Leader leader = null;
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 5; i++) {
 			byte[] dados;
 			try {
 				dados = zk.getData("/Server" + i, null, null);

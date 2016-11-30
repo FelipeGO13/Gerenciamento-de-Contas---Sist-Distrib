@@ -14,11 +14,11 @@ public class ControleGeral {
 	
 	public void executa(String leaderAddress, String leaderPath){
 		Scanner sc = new Scanner(System.in);
-		System.out.println("Escolha a operaÃ§Ã£o desejada: ");
+		System.out.println("Escolha a operação desejada: ");
 		System.out.println("Digite 1 para inserir cliente e conta ");
-		System.out.println("Digite 2 para inserir processar transaÃ§Ã£o ");
+		System.out.println("Digite 2 para inserir processar transação ");
 		System.out.println("Digite 3 para HUE ");
-		System.out.println("Digite 4 para processar transaÃ§Ãµes pendentes ");
+		System.out.println("Digite 4 para processar transações pendentes ");
 
 		int opcao = sc.nextInt();
 
@@ -61,13 +61,13 @@ public class ControleGeral {
 				Lock lock = new Lock(leaderAddress, "/Transacoes", 10000, leaderPath);
 				Barrier barreira = null;
 				int size = 1;
-				System.out.println("Deseja fazer mÃºltiplas transaÃ§Ãµes");
+				System.out.println("Deseja fazer múltiplas transações");
 				if (sc.next().toUpperCase().equals("S")) {
-					System.out.println("Digite o nÃºmero de transaÃ§Ãµes a serem processadas");
+					System.out.println("Digite o número de transações a serem processadas");
 					size = sc.nextInt();
 					barreira = new Barrier(leaderAddress, "/MultiTransacoes", size, leaderPath);
 				} else {
-					System.out.println("Processando transaÃ§Ã£o Ãºnica");
+					System.out.println("Processando transação... ");
 				}
 
 				for (int i = 0; i < size; i++) {
@@ -75,20 +75,20 @@ public class ControleGeral {
 					Transacao t = new Transacao();
 					t.setCliente(new Cliente());
 
-					System.out.println("Insira o cÃ³digo da transaÃ§Ã£o");
+					System.out.println("Insira o código da transação");
 					t.setCodigo(sc.nextInt());
 
 					System.out.println("Insira o cpf do cliente");
 					t.getCliente().setCpf(sc.next());
 
-					System.out.println("Insira o tipo da OperaÃ§Ã£o, digite:\r\n 1 para Saque\r\n"
-							+ "2 para DepÃ³sitos\r\n" + "3 para Compra-DÃ©bito\r\n" + "4 para Compra-CrÃ©dito");
+					System.out.println("Insira o tipo da Operação, digite:\r\n 1 para Saque\r\n"
+							+ "2 para Depósitos\r\n" + "3 para Compra-Débito\r\n" + "4 para Compra-Crédito");
 					t.setOperacao(sc.nextInt());
 
 					System.out.println("Insira o valor");
 					t.setValor(sc.nextDouble());
 
-					System.out.println("Insira um descriÃ§Ã£o para a transaÃ§Ã£o");
+					System.out.println("Insira um descrição para a transação");
 					if (sc.hasNext())
 						t.setDescricao(sc.next());
 

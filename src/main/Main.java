@@ -1,5 +1,11 @@
 package main;
 
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
+
+import Conexao.ZooKeeperConnection;
 import SyncPrimitive.LeaderElection;
 
 public class Main {
@@ -12,15 +18,28 @@ public class Main {
 	 * e replicacao
 	 */
 	public static void main(String[] args) {
-		
 
-		String leaderAddress = "localhost";
-		
-		
-		LeaderElection leader = new LeaderElection(leaderAddress);
-		leader.leaderElection(leaderAddress);
+		String address = "localhost";
+		ZooKeeperConnection zkConnect = new ZooKeeperConnection();
+		ZooKeeper zk;
+		for (int i = 0; i < 5; i++) {
+			try {
+				zk = zkConnect.connect(address);
+				Stat s1 = zk.exists("/Server" + i, false);
+				if (s1 == null) {
+					zk.create("/Server" + i, new Integer(i).toString().getBytes(), Ids.OPEN_ACL_UNSAFE,
+							CreateMode.PERSISTENT);
+					zk.create("/Server" + i + "/Clientes", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
-	
+		}
+		LeaderElection leader = new LeaderElection(address);
+		leader.leaderElection(address);
+
 	}
 
 }

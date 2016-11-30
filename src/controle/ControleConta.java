@@ -11,42 +11,45 @@ import Conexao.ZooKeeperConnection;
 import bean.Cliente;
 import bean.Conta;
 
-
 public class ControleConta {
-	
+
 	private ZooKeeper zk;
-	
+
 	private ZooKeeperConnection conexao;
-	
-	 // Method to create znode in zookeeper ensemble
-	private void create(String path, byte[] data) throws 
-	      KeeperException,InterruptedException {
-	      zk.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-	      CreateMode.PERSISTENT);
-	}
-	
-	public void criarConta(Cliente c, int agencia, int numConta, double saldo, double limite, String leaderPath){
+
+	public void criarConta(Cliente c, int agencia, int numConta, double saldo, double limite, String leaderPath) {
 		Conta conta = new Conta(agencia, numConta, saldo, limite);
 		c.setConta(conta);
-		
-		String caminho =  leaderPath + "/Clientes/"+c.getCpf()+"/conta";
-		String dados = c.getConta().getAgencia()+","+c.getConta().getNumero()+","+c.getConta().getSaldoDebito()+","+c.getConta().getLimiteCredito();
-		
-		 try {
-	         conexao = new ZooKeeperConnection();
-	         zk = conexao.connect("localhost");
-	         create(caminho, dados.getBytes()); // Create the data to the specified path
-	         conexao.close();
-	         
-	         FileOutputStream fos = new FileOutputStream(c.getCpf() + ".txt");
-	         String inicio = "Histórico de transações\r\n Cliente: " + c.getNome() + "\r\n CPF: " + c.getCpf() +  "\r\n Agência: " + conta.getAgencia() +  "\r\n Conta: " + conta.getNumero();
-             fos.write(inicio.getBytes());
-             fos.close();
-	         
-	         System.out.println("Conta criada com sucesso!");
-	      } catch (Exception e) {
-	         System.out.println(e.getMessage()); //Catch error message
-	      }
+
+		String caminho = leaderPath + "/Clientes/" + c.getCpf() + "/conta";
+		String dados = c.getConta().getAgencia() + "," + c.getConta().getNumero() + "," + c.getConta().getSaldoDebito()
+				+ "," + c.getConta().getLimiteCredito();
+
+		try {
+			conexao = new ZooKeeperConnection();
+			zk = conexao.connect("localhost");
+			zk.create(caminho, dados.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			conexao.close();
+
+			FileOutputStream fos = new FileOutputStream(c.getCpf() + ".txt");
+			String inicio = "Histórico de transações\r\n Cliente: " + c.getNome() + "\r\n CPF: " + c.getCpf()
+					+ "\r\n Agência: " + conta.getAgencia() + "\r\n Conta: " + conta.getNumero();
+			fos.write(inicio.getBytes());
+			fos.close();
+
+			System.out.println("Conta criada com sucesso!");
+
+			for (int i = 0; i < 3; i++) {
+				zk = conexao.connect("localhost");
+				if (Integer.parseInt(leaderPath.substring(7)) != i) {
+					String editPath = leaderPath.substring(0, 7) + i + "/Clientes/" + c.getCpf() + "/conta";
+					zk.create(editPath, dados.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+				}
+			}
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage()); // Catch error message
+		}
 	}
 
 }
