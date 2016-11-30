@@ -128,6 +128,7 @@ public class ControleTransacao {
 	public void replicarTransacao(String serverAtivo, String dados, Cliente c) {
 		for (int i = 0; i < 5; i++) {
 			try {
+				conexao = new ZooKeeperConnection();
 				zk = conexao.connect("localhost");
 				if (Integer.parseInt(serverAtivo.substring(7)) != i) {
 					String editPath = serverAtivo.substring(0, 7) + i + "/Clientes/" + c.getCpf() + "/conta";

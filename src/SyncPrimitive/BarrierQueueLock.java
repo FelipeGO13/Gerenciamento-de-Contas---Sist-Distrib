@@ -274,7 +274,7 @@ public class BarrierQueueLock implements Watcher {
 	static public class Lock extends BarrierQueueLock {
 		long wait;
 		String pathName;
-
+		Transacao transacao;
 		/**
 		 * Constructor of lock
 		 *
@@ -288,6 +288,7 @@ public class BarrierQueueLock implements Watcher {
 			this.root = name;
 			this.wait = waitTime;
 			this.leaderPath = leaderPath;
+			
 			// Create ZK node name
 			if (zk != null) {
 				try {
@@ -307,6 +308,7 @@ public class BarrierQueueLock implements Watcher {
 			// Step 1
 			pathName = zk.create(root + "/lock-", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
 			System.out.println("My path name is: " + pathName);
+			this.transacao = t;
 			// Steps 2 to 5
 			return testMin();
 		}
@@ -356,7 +358,7 @@ public class BarrierQueueLock implements Watcher {
 			return false;
 		}
 
-		synchronized public void process(WatchedEvent event, Transacao t) {
+		synchronized public void process(WatchedEvent event) {
 			synchronized (mutex) {
 				String path = event.getPath();
 				if (event.getType() == Event.EventType.NodeDeleted) {
@@ -364,7 +366,7 @@ public class BarrierQueueLock implements Watcher {
 					try {
 						if (testMin()) { // Step 5 (cont.) -> go to step 2 to
 											// check
-							this.compute(t);
+							this.compute(transacao);
 						} else {
 							System.out.println("Not lowest sequence number! Waiting for a new notification.");
 						}
