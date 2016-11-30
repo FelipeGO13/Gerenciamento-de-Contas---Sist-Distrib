@@ -4,21 +4,19 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Scanner;
 
-import SyncPrimitive.BarrierQueueLock.Barrier;
 import SyncPrimitive.BarrierQueueLock.Lock;
 import SyncPrimitive.BarrierQueueLock.Queue;
 import bean.Cliente;
 import bean.Transacao;
 
 public class ControleGeral {
-	
-	public void executa(String leaderAddress, String leaderPath){
+
+	public void executa(String leaderAddress, String leaderPath) {
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Escolha a operaÁ„o desejada: ");
-		System.out.println("Digite 1 para inserir cliente e conta ");
-		System.out.println("Digite 2 para inserir processar transaÁ„o ");
-		System.out.println("Digite 3 para HUE ");
-		System.out.println("Digite 4 para processar transaÁıes pendentes ");
+		System.out.println("Digite 1 para inserir cliente e conta");
+		System.out.println("Digite 2 para processar transaÁ„o ");
+		System.out.println("Digite 3 para processar transaÁıes pendentes");
 
 		int opcao = sc.nextInt();
 
@@ -26,7 +24,6 @@ public class ControleGeral {
 		case 1:
 			ControleCliente controleCliente = new ControleCliente();
 			ControleConta controleConta = new ControleConta();
-			ControleTransacao controleTransacao = new ControleTransacao();
 
 			System.out.println("Insira o nome do cliente");
 			String nome = sc.next();
@@ -47,7 +44,8 @@ public class ControleGeral {
 			System.out.println("Insira o limite");
 			double limite = sc.nextDouble();
 
-			controleConta.criarConta(c, agencia, conta, saldo, limite, leaderPath);
+			controleConta.criarConta(c, agencia, conta, saldo, limite,
+					leaderPath);
 			// Falta tentar setar um watcher pra identificar altera√ß√£o nestes
 			// znodes
 
@@ -57,89 +55,69 @@ public class ControleGeral {
 			// Executa a transa√ß√£o utilizando queues e locks
 			try {
 
-				Queue filaEscrita = new Queue(leaderAddress, "/filaTransacao", leaderPath);
-				Lock lock = new Lock(leaderAddress, "/Transacoes", 10000, leaderPath);
-				Barrier barreira = null;
-				int size = 1;
-				System.out.println("Deseja fazer m˙ltiplas transaÁıes");
-				if (sc.next().toUpperCase().equals("S")) {
-					System.out.println("Digite o n˙mero de transaÁıes a serem processadas");
-					size = sc.nextInt();
-					barreira = new Barrier(leaderAddress, "/MultiTransacoes", size, leaderPath);
-				} else {
-					System.out.println("Processando transaÁ„o... ");
-				}
+				Queue filaEscrita = new Queue(leaderAddress, "/filaTransacao",
+						leaderPath);
+				Lock lock = new Lock(leaderAddress, "/Transacoes", 10000,
+						leaderPath);
 
-				for (int i = 0; i < size; i++) {
+				Transacao t = new Transacao();
+				t.setCliente(new Cliente());
 
-					Transacao t = new Transacao();
-					t.setCliente(new Cliente());
+				System.out.println("Insira o cÛdigo da transaÁ„o");
+				t.setCodigo(sc.nextInt());
 
-					System.out.println("Insira o cÛdigo da transaÁ„o");
-					t.setCodigo(sc.nextInt());
+				System.out.println("Insira o cpf do cliente");
+				t.getCliente().setCpf(sc.next());
 
-					System.out.println("Insira o cpf do cliente");
-					t.getCliente().setCpf(sc.next());
+				System.out
+						.println("Insira o tipo da OperaÁ„o, digite:\r\n 1 para Saque\r\n"
+								+ "2 para DepÛsitos\r\n"
+								+ "3 para Compra-DÈbito\r\n"
+								+ "4 para Compra-CrÈdito");
+				t.setOperacao(sc.nextInt());
 
-					System.out.println("Insira o tipo da OperaÁ„o, digite:\r\n 1 para Saque\r\n"
-							+ "2 para DepÛsitos\r\n" + "3 para Compra-DÈbito\r\n" + "4 para Compra-CrÈdito");
-					t.setOperacao(sc.nextInt());
+				System.out.println("Insira o valor");
+				t.setValor(sc.nextDouble());
 
-					System.out.println("Insira o valor");
-					t.setValor(sc.nextDouble());
+				System.out.println("Insira um descriÁ„o para a transaÁ„o");
+				if (sc.hasNext())
+					t.setDescricao(sc.next());
 
-					System.out.println("Insira um descriÁ„o para a transaÁ„o");
-					if (sc.hasNext())
-						t.setDescricao(sc.next());
+				SimpleDateFormat formatter = new SimpleDateFormat(
+						"dd/MM/yyyy hh:mm:ss");
+				Date dataAtual = new Date();
 
-					SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss");
-					Date dataAtual = new Date();
+				String data = formatter.format(dataAtual);
+				t.setData(data);
 
-					String data = formatter.format(dataAtual);
-					t.setData(data);
+				System.out.println(t);
 
-					System.out.println(t);
+				if (dataAtual.getHours() < 19 && dataAtual.getHours() > 8)
+					lock.lockTest(lock, t);
+				else
+					filaEscrita.queueTest(filaEscrita, "p", t, 0);
 
-					if (size > 1) {
-						System.out.println("Processando transa√ß√£o " + (i+1));
-						if (dataAtual.getHours() < 19 && dataAtual.getHours() > 8) {
-							barreira.barrierTest(lock, barreira, t);
-						} else {
-							barreira.barrierTest(filaEscrita, barreira, t);
-						}
-					} else {
+			}
 
-						if (dataAtual.getHours() < 19 && dataAtual.getHours() > 8)
-							lock.lockTest(lock, t);
-						else
-							filaEscrita.queueTest(filaEscrita, "p", t, 0);
-					}
-
-				}
-
-			} catch (Exception e) {
+			catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
 			/*
-			 * Armazena tbm a transa√ß√£o atrav√©s do barrier para aquele cliente
-			 * (obs: cliente diferentes znodes de barrier diferentes) ap√≥s 3
-			 * transa√ß√µes o barrier √© liberado para checagem de autenticidade e
-			 * calcular m√©dia de gastos e outras m√©tricas para detectar fraudes
+			 * Armazena tbm a transa√ß√£o atrav√©s do barrier para aquele
+			 * cliente (obs: cliente diferentes znodes de barrier diferentes)
+			 * ap√≥s 3 transa√ß√µes o barrier √© liberado para checagem de
+			 * autenticidade e calcular m√©dia de gastos e outras m√©tricas para
+			 * detectar fraudes
 			 */
 			break;
 		case 3:
 			/*
-			 * Pegar informa√ß√µes de um usu√°rio - dados armazenados no znode cpf
-			 * e conta
-			 */
-			break;
-		case 4:
-			/*
 			 * Executar transa√ß√µes pendentes
 			 */
-			Queue filaLeitura = new Queue(leaderAddress, "/filaTransacao", leaderPath);
+			Queue filaLeitura = new Queue(leaderAddress, "/filaTransacao",
+					leaderPath);
 			filaLeitura.queueTest(filaLeitura, "c", new Transacao(), 2);
 
 			break;

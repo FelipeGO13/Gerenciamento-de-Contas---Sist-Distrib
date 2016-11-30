@@ -22,21 +22,28 @@ public class Main {
 		String address = "localhost";
 		ZooKeeperConnection zkConnect = new ZooKeeperConnection();
 		ZooKeeper zk;
-		for (int i = 0; i < 5; i++) {
-			try {
-				zk = zkConnect.connect(address);
+		try {
+			zk = zkConnect.connect(address);
+			for (int i = 0; i < 7; i++) {
 				Stat s1 = zk.exists("/Server" + i, false);
 				if (s1 == null) {
-					zk.create("/Server" + i, new Integer(i).toString().getBytes(), Ids.OPEN_ACL_UNSAFE,
+					zk.create("/Server" + i, new Integer(i).toString()
+							.getBytes(), Ids.OPEN_ACL_UNSAFE,
 							CreateMode.PERSISTENT);
-					zk.create("/Server" + i + "/Clientes", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+					zk.create("/Server" + i + "/Clientes", new byte[0],
+							Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 				}
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
-
+			Stat s2 = zk.exists("/Replicacao",  false);
+			if(s2 == null){
+				zk.create("/Replicacao" , new byte[0],Ids.OPEN_ACL_UNSAFE,
+						CreateMode.PERSISTENT);
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+
 		LeaderElection leader = new LeaderElection(address);
 		leader.leaderElection(address);
 

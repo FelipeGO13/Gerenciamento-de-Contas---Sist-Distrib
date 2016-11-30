@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -14,9 +13,10 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
-import Conexao.ZooKeeperConnection;
 import bean.Cliente;
 import bean.Transacao;
+import controle.ControleCliente;
+import controle.ControleConta;
 import controle.ControleTransacao;
 
 /*
@@ -29,26 +29,23 @@ public class BarrierQueueLock implements Watcher {
 	static Integer mutex;
 
 	String root;
+	String leaderPath;
 
 	BarrierQueueLock(String address) {
 		if (zk == null) {
 			try {
-				System.out.println("Starting ZK:");
-				ZooKeeperConnection conexao = new ZooKeeperConnection();
-				zk = conexao.connect("localhost");
+				zk = new ZooKeeper(address, 15000, this);
 				mutex = new Integer(-1);
-				System.out.println("Finished starting ZK: " + zk);
+
 			} catch (Exception e) {
 				System.out.println(e.toString());
 				zk = null;
 			}
 		}
-		// else mutex = new Integer(-1);
 	}
 
 	synchronized public void process(WatchedEvent event) {
 		synchronized (mutex) {
-			// System.out.println("Process: " + event.getType());
 			mutex.notify();
 		}
 	}
@@ -67,7 +64,7 @@ public class BarrierQueueLock implements Watcher {
 		 * @param root
 		 * @param size
 		 */
-		public Barrier(String address, String root, int size, String leaderPath) {
+		public Barrier(String address, String root, int size) {
 			super(address);
 			this.root = root;
 			this.size = size;
@@ -77,10 +74,13 @@ public class BarrierQueueLock implements Watcher {
 				try {
 					Stat s = zk.exists(root, false);
 					if (s == null) {
-						zk.create(root, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+						zk.create(root, new byte[0], Ids.OPEN_ACL_UNSAFE,
+								CreateMode.PERSISTENT);
 					}
 				} catch (KeeperException e) {
-					System.out.println("Keeper exception when instantiating queue: " + e.toString());
+					System.out
+							.println("Keeper exception when instantiating queue: "
+									+ e.toString());
 				} catch (InterruptedException e) {
 					System.out.println("Interrupted exception");
 				}
@@ -88,7 +88,8 @@ public class BarrierQueueLock implements Watcher {
 
 			// My node name
 			try {
-				name = new String(InetAddress.getLocalHost().getCanonicalHostName().toString());
+				name = new String(InetAddress.getLocalHost()
+						.getCanonicalHostName().toString());
 			} catch (UnknownHostException e) {
 				System.out.println(e.toString());
 			}
@@ -103,13 +104,14 @@ public class BarrierQueueLock implements Watcher {
 		 * @throws InterruptedException
 		 */
 
-		boolean enter(Transacao t) throws KeeperException, InterruptedException {
-			byte[] dadosTransacao = t.toString().getBytes();
-			zk.create(root + "/" + name, dadosTransacao, Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+		boolean enter() throws KeeperException, InterruptedException {
+			zk.create(root + "/" + name, new byte[0], Ids.OPEN_ACL_UNSAFE,
+					CreateMode.EPHEMERAL_SEQUENTIAL);
 			while (true) {
 				synchronized (mutex) {
 					List<String> list = zk.getChildren(root, true);
-
+					System.out
+							.println("Aguardando replicação para outros servidores...");
 					if (list.size() < size) {
 						mutex.wait();
 					} else {
@@ -128,6 +130,8 @@ public class BarrierQueueLock implements Watcher {
 		 */
 
 		boolean leave() throws KeeperException, InterruptedException {
+			System.out
+					.println("Transação sendo replicada para nossos outros servidores...");
 			zk.delete(root + "/" + name, 0);
 			while (true) {
 				synchronized (mutex) {
@@ -156,6 +160,7 @@ public class BarrierQueueLock implements Watcher {
 		public Queue(String address, String name, String leaderPath) {
 			super(address);
 			this.root = name;
+			this.leaderPath = leaderPath;
 			// Create ZK node name
 			if (zk != null) {
 				try {
@@ -163,10 +168,13 @@ public class BarrierQueueLock implements Watcher {
 					if (s == null) {
 						byte[] b = new byte[1];
 						b = ByteBuffer.allocate(4).putInt(0).array();
-						zk.create(root, b, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+						zk.create(root, b, Ids.OPEN_ACL_UNSAFE,
+								CreateMode.PERSISTENT);
 					}
 				} catch (KeeperException e) {
-					System.out.println("Keeper exception when instantiating queue: " + e.toString());
+					System.out
+							.println("Keeper exception when instantiating queue: "
+									+ e.toString());
 				} catch (InterruptedException e) {
 					System.out.println("Interrupted exception");
 				}
@@ -180,9 +188,11 @@ public class BarrierQueueLock implements Watcher {
 		 * @return
 		 */
 
-		boolean produce(Transacao t) throws KeeperException, InterruptedException {
+		boolean produce(Transacao t) throws KeeperException,
+				InterruptedException {
 			Stat stat = null;
-
+			System.out
+					.println("Devido ao horário, esta transação será processada apenas no próximo dia útil");
 			byte[] b = zk.getData("/filaTransacao", false, stat);
 			ByteBuffer buffer = ByteBuffer.wrap(b);
 			System.out.println(b.toString());
@@ -192,7 +202,7 @@ public class BarrierQueueLock implements Watcher {
 			zk.setData("/filaTransacao", b, -1);
 			byte[] dadosTransacao = t.toString().getBytes();
 			zk.create(root + "/element", dadosTransacao, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
-
+			System.out.println("Transação agendada com sucesso!");
 			return true;
 		}
 
@@ -247,7 +257,7 @@ public class BarrierQueueLock implements Watcher {
 							String descricao = dadosTransacao[5];
 
 							t = new Transacao(codigo, descricao, operacao, valor, c, data);
-							controleTransacao.processarTransacao(t);
+							controleTransacao.processarTransacao(t, leaderPath);
 
 							System.out.println("Transação: " + codigo + " processada com sucesso!");
 							zk.delete(root + "/" + minString, 0);
@@ -272,10 +282,12 @@ public class BarrierQueueLock implements Watcher {
 		 * @param name
 		 *            Name of the lock node
 		 */
-		public Lock(String address, String name, long waitTime, String leaderPath) {
+		public Lock(String address, String name, long waitTime,
+				String leaderPath) {
 			super(address);
 			this.root = name;
 			this.wait = waitTime;
+			this.leaderPath = leaderPath;
 			// Create ZK node name
 			if (zk != null) {
 				try {
@@ -309,7 +321,6 @@ public class BarrierQueueLock implements Watcher {
 				String minString = list.get(0);
 				for (String s : list) {
 					Integer tempValue = new Integer(s.substring(5));
-					// System.out.println("Temp value: " + tempValue);
 					if (tempValue < min) {
 						min = tempValue;
 						minString = s;
@@ -368,7 +379,7 @@ public class BarrierQueueLock implements Watcher {
 			System.out.println("Lock acquired!");
 			try {
 				ControleTransacao controleTransacao = new ControleTransacao();
-				controleTransacao.processarTransacao(t);
+				controleTransacao.processarTransacao(t, leaderPath);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -408,11 +419,12 @@ public class BarrierQueueLock implements Watcher {
 		}
 	}
 
-	public static void barrierTest(BarrierQueueLock p, Barrier b, Transacao t) {
-		
+	public static void barrierTest(Barrier b, String leaderPath, String dados1,
+			String dados2, Cliente c, int tipo) {
+
 		try {
-			boolean flag = b.enter(t);
-			System.out.println("Entered barrier: " + t.getCodigo());
+			boolean flag = b.enter();
+
 			if (!flag)
 				System.out.println("Error when entering the barrier");
 		} catch (KeeperException e) {
@@ -421,10 +433,20 @@ public class BarrierQueueLock implements Watcher {
 
 		}
 
-		if(p.getClass().equals(Lock.class))
-			p.lockTest((Lock) p, t);
-		else 
-			p.queueTest((Queue) p, "p", t, 0);
+		switch (tipo) {
+		case 1:
+			ControleCliente controleCliente = new ControleCliente();
+			controleCliente.replicarCliente(leaderPath, dados1, c);
+
+			ControleConta controleConta = new ControleConta();
+			controleConta.replicarConta(leaderPath, dados2, c);
+			break;
+		case 2:
+			ControleTransacao controleTransacao = new ControleTransacao();
+			controleTransacao.replicarTransacao(leaderPath, dados1, c);
+			break;
+		}
+
 		try {
 			b.leave();
 		} catch (KeeperException e) {
@@ -432,18 +454,18 @@ public class BarrierQueueLock implements Watcher {
 		} catch (InterruptedException e) {
 
 		}
-		System.out.println("Left barrier");
+		System.out.println("Replicação completa");
 	}
 
 	public static void lockTest(Lock lock, Transacao t) {
-		
+
 		try {
 			boolean success = lock.lock(t);
 			if (success) {
 				lock.compute(t);
 			} else {
 				while (true) {
-					
+
 				}
 			}
 		} catch (KeeperException e) {
