@@ -19,9 +19,10 @@ import controle.ControleCliente;
 import controle.ControleConta;
 import controle.ControleTransacao;
 
-/*
- * Algoritmos do prof para barriers, queues e locks
- * 
+/**
+ * Algoritmos fornecidos para implementações de Barries, queues e locks
+ * modificados para atender as funcionalidades do projeto
+ *
  */
 public class BarrierQueueLock implements Watcher {
 
@@ -195,7 +196,7 @@ public class BarrierQueueLock implements Watcher {
 					.println("Devido ao horário, esta transação será processada apenas no próximo dia útil");
 			byte[] b = zk.getData("/filaTransacao", false, stat);
 			ByteBuffer buffer = ByteBuffer.wrap(b);
-			System.out.println(b.toString());
+		
 			int numTransacoes = buffer.getInt();
 			numTransacoes++;
 			b = ByteBuffer.allocate(4).putInt(numTransacoes).array();
@@ -275,6 +276,7 @@ public class BarrierQueueLock implements Watcher {
 		long wait;
 		String pathName;
 		Transacao transacao;
+		
 		/**
 		 * Constructor of lock
 		 *
@@ -289,7 +291,6 @@ public class BarrierQueueLock implements Watcher {
 			this.wait = waitTime;
 			this.leaderPath = leaderPath;
 			
-			// Create ZK node name
 			if (zk != null) {
 				try {
 					Stat s = zk.exists(root, false);
@@ -383,7 +384,7 @@ public class BarrierQueueLock implements Watcher {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			// Exits, which releases the ephemeral node (Unlock operation)
+			
 			System.out.println("Transação processada com sucesso!");
 			System.exit(0);
 		}
@@ -420,7 +421,7 @@ public class BarrierQueueLock implements Watcher {
 	}
 
 	public static void barrierTest(Barrier b, String leaderPath, String dados1,
-			String dados2, Cliente c, int tipo) {
+			String dados2, Cliente c) {
 
 		try {
 			boolean flag = b.enter();
@@ -433,19 +434,12 @@ public class BarrierQueueLock implements Watcher {
 
 		}
 
-		switch (tipo) {
-		case 1:
+	
 			ControleCliente controleCliente = new ControleCliente();
 			controleCliente.replicarCliente(leaderPath, dados1, c);
 
 			ControleConta controleConta = new ControleConta();
 			controleConta.replicarConta(leaderPath, dados2, c);
-			break;
-		case 2:
-			ControleTransacao controleTransacao = new ControleTransacao();
-			controleTransacao.replicarTransacao(leaderPath, dados1, c);
-			break;
-		}
 
 		try {
 			b.leave();

@@ -40,7 +40,7 @@ public class ControleConta {
 			System.out.println("Conta criada com sucesso!");
 
 			Barrier barreira = new Barrier("localhost", "/Replicacao",3);
-			barreira.barrierTest(barreira, leaderPath, c.toString(), dados, c, 1);
+			barreira.barrierTest(barreira, leaderPath, c.toString(), dados, c);
 			
 		} catch (Exception e) {
 			System.out.println(e.getMessage()); // Catch error message

@@ -10,18 +10,14 @@ import SyncPrimitive.LeaderElection;
 
 public class Main {
 
-	/*
-	 * Ideia Leader Election - Ao rodar o prog, as infos são guardadas em znodes
-	 * diferentes, mas só 1 é o líder definindo a leitura e escrita de infos e
-	 * sendo responsavel por replicar as infos para os outros znodes. se este
-	 * znode "morre" um novo deve assumir a responsabilidade de leitura, escrita
-	 * e replicacao
-	 */
 	public static void main(String[] args) {
 
 		String address = "localhost";
 		ZooKeeperConnection zkConnect = new ZooKeeperConnection();
 		ZooKeeper zk;
+		/**
+		 * Cria, caso não existam, znodes necessários para execução do programa
+		 */
 		try {
 			zk = zkConnect.connect(address);
 			for (int i = 0; i < 7; i++) {
@@ -40,10 +36,13 @@ public class Main {
 						CreateMode.PERSISTENT);
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
+		/**
+		 * Programa elege um znode para servir de "servidor" ativo e assim iniciar o
+		 * processamento das operações.
+		 */
 		LeaderElection leader = new LeaderElection(address);
 		leader.leaderElection(address);
 

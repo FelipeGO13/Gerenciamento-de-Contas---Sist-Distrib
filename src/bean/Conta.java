@@ -6,7 +6,6 @@ public class Conta {
 	private Integer numero;
 	private Double saldoDebito;
 	private Double limiteCredito;
-	private String senha;
 	
 	public Conta() {
 		// TODO Auto-generated constructor stub
@@ -43,12 +42,7 @@ public class Conta {
 	public void setLimiteCredito(Double limiteCredito) {
 		this.limiteCredito = limiteCredito;
 	}
-	public String getSenha() {
-		return senha;
-	}
-	public void setSenha(String senha) {
-		this.senha = senha;
-	}
+	
 	
 	@Override
 	public String toString() {

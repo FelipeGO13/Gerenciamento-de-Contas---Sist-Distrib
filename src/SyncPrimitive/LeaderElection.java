@@ -95,7 +95,7 @@ public class LeaderElection implements Watcher {
 
 			this.pathName = zk.create(root + "/n-", new byte[0],
 					Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-			System.out.println("My path name is: " + pathName
+			System.out.println("Elegendo servidor...: " + pathName
 					+ " and my id is: " + id + "!");
 			leaderPath = "/Server" + id;
 

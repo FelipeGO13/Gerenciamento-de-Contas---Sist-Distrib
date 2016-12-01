@@ -1,9 +1,17 @@
 package controle;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
+
 import java.util.Date;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
+
+import Conexao.ZooKeeperConnection;
 import SyncPrimitive.BarrierQueueLock.Lock;
 import SyncPrimitive.BarrierQueueLock.Queue;
 import bean.Cliente;
@@ -12,14 +20,24 @@ import bean.Transacao;
 public class ControleGeral {
 
 	@SuppressWarnings({ "deprecation", "static-access" })
-	public void executa(String leaderAddress, String leaderPath) {
+	public void executa(String leaderAddress, String leaderPath) throws KeeperException, InterruptedException, IOException {
+		ZooKeeperConnection zkConnect = new ZooKeeperConnection();
+		ZooKeeper zk;
+		
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Escolha a operação desejada: ");
 		System.out.println("Digite 1 para inserir cliente e conta");
 		System.out.println("Digite 2 para processar transação");
 		System.out.println("Digite 3 para processar transações pendentes");
-
-		int opcao = sc.nextInt();
+		System.out.println("Digite 4 para sair");
+		
+		int opcao= 0;
+		
+		//Testa se os inputs sao do tipo certo (InputMismatchException). Esta em volta de todo o switch
+		try{
+			zk = zkConnect.connect("localhost");
+			opcao = sc.nextInt();
+		
 
 		switch (opcao) {
 		case 1:
@@ -31,6 +49,13 @@ public class ControleGeral {
 
 			System.out.println("Insira o cpf do cliente");
 			String cpf = sc.next();
+			
+			//Verifica se o cliente já possui conta
+			Stat test1= zk.exists(leaderPath+"/Clientes/"+cpf, false);
+			if(test1!=null){
+				System.out.println("Esse CPF já possui conta");
+				this.executa(leaderAddress, leaderPath);
+			}
 
 			System.out.println(leaderPath);
 			Cliente c = controleCliente.criarCliente(nome, cpf, leaderPath);
@@ -67,14 +92,29 @@ public class ControleGeral {
 				t.setCodigo(sc.nextInt());
 
 				System.out.println("Insira o cpf do cliente");
-				t.getCliente().setCpf(sc.next());
+				String tempCPF = sc.next();
+				
+				//Verfica se a conta do CPF existe
+				Stat test2= zk.exists(leaderPath+"/Clientes/" + tempCPF, false);
+				if(test2==null){
+					System.out.println("Crie uma conta antes de tentar realizar uma transação!");
+					this.executa(leaderAddress, leaderPath);
+				}else t.getCliente().setCpf(tempCPF);
 
 				System.out
 						.println("Insira o tipo da Operação, digite:\r\n 1 para Saque\r\n"
 								+ "2 para Depósitos\r\n"
 								+ "3 para Compra-Débito\r\n"
 								+ "4 para Compra-Crédito");
-				t.setOperacao(sc.nextInt());
+				
+				//Verifica se o input é um dos números de operação acima
+				int temp = sc.nextInt();
+				if(temp>0 && temp<5) t.setOperacao(temp);
+				else {
+					System.out.println("Operação Não identificada");
+					ControleGeral controle = new ControleGeral();
+					controle.executa("localhost", leaderPath);
+				}
 
 				System.out.println("Insira o valor");
 				t.setValor(sc.nextDouble());
@@ -108,7 +148,18 @@ public class ControleGeral {
 			filaLeitura.queueTest(filaLeitura, "c", new Transacao(), 2);
 
 			break;
-
+		case 4:
+			System.exit(0);
+			break;
+		default:
+			System.out.println("Opção inválida");
+			this.executa(leaderAddress, leaderPath);
+			break;
+		}
+		
+		} catch(InputMismatchException e){
+			System.out.println("Input inválido!");
+			this.executa(leaderAddress, leaderPath);
 		}
 
 	}

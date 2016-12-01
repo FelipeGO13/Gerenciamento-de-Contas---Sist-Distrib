@@ -1,5 +1,5 @@
 package Conexao;
-// import java classes
+
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
@@ -10,14 +10,17 @@ import org.apache.zookeeper.ZooKeeper;
 
 public class ZooKeeperConnection {
 
-   // declare zookeeper instance to access ZooKeeper ensemble
-   private ZooKeeper zoo;
+ 
+   private ZooKeeper zk;
    final CountDownLatch connectedSignal = new CountDownLatch(1);
 
-   // Method to connect zookeeper ensemble.
+
+   /**
+    * Cria conexão com servidor ZooKeeper
+    */
    public ZooKeeper connect(String host) throws IOException,InterruptedException {
 	
-      zoo = new ZooKeeper(host,18000,new Watcher() {
+      zk = new ZooKeeper(host,18000,new Watcher() {
 		
          public void process(WatchedEvent we) {
 
@@ -28,11 +31,10 @@ public class ZooKeeperConnection {
       });
 		
       connectedSignal.await();
-      return zoo;
+      return zk;
    }
 
-   // Method to disconnect from zookeeper server
    public void close() throws InterruptedException {
-      zoo.close();
+      zk.close();
    }
 }

@@ -3,6 +3,8 @@ package controle;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.util.InputMismatchException;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -52,8 +54,9 @@ public class ControleTransacao {
 		}
 	}
 
+	//Adicionei o throw do InputMismatchException 
 	@SuppressWarnings("static-access")
-	public void processarTransacao(Transacao t, String leaderPath) {
+	public void processarTransacao(Transacao t, String leaderPath) throws InputMismatchException, KeeperException, InterruptedException, IOException {
 		try {
 			Stat stat = null;
 			conexao = new ZooKeeperConnection();
@@ -93,6 +96,8 @@ public class ControleTransacao {
 				break;
 			default:
 				tipoOperacao = "Não identificado";
+				//ControleGeral controle = new ControleGeral();
+				//controle.executa("localhost", leaderPath);
 				break;
 			}
 
@@ -113,12 +118,13 @@ public class ControleTransacao {
 			zk.setData(caminho,
 					t.getCliente().getConta().toString().getBytes(), -1);
 			
-			Barrier barreira = new Barrier("localhost", "/Replicacao", 3);
-			barreira.barrierTest(barreira, leaderPath, t.getCliente().getConta().toString(), null, t.getCliente(), 2);
-
+			this.replicarTransacao(leaderPath, t.getCliente().getConta().toString(), t.getCliente());
+			
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
-		}
+			ControleGeral controle = new ControleGeral();
+			controle.executa("localhost", leaderPath);
+		} 
 	}
 
 	public void replicarTransacao(String serverAtivo, String dados, Cliente c) {
